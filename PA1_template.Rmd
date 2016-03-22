@@ -1,0 +1,137 @@
+---
+title: "Reproducible_Assgn_1"
+author: "Nagendra"
+date: "March 22, 2016"
+output: html_document
+---
+
+This is an R Markdown document. This is created for Assignment 1 of Reproducible Research course.
+
+## Loading and preprocessing the data
+
+```{r, echo=TRUE}
+setwd("C:/Users/shash/Documents/repdata_data_activity")
+
+data <- read.csv("activity.csv")
+
+summary(data)
+```
+
+# What is mean total number of steps taken per day?
+
+```{r, echo=TRUE}
+
+# Below calculates total number of stepds taken per day
+sum_steps <- aggregate(data$steps, by=list(data$date), FUN=sum, na.rm=TRUE)
+
+names(sum_steps) <- c("date", "steps")
+
+#Below is to create Histogram for Total Steps per day.
+hist(sum_steps$steps, main="Histogram for Total Steps per Day", xlab="Total Steps", col="lightgreen")
+
+# Mean of the total number of steps taken per day
+mean(sum_steps$steps)
+
+#Median of the total number of steps taken per day
+median(sum_steps$steps)
+
+```
+
+## What is the average daily activity pattern?
+
+```{r, echo=TRUE}
+mean_data <- aggregate(data$steps, by=list(data$interval), FUN=mean, na.rm=TRUE)
+names(mean_data) <- c("interval", "mean")
+
+#1.Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+plot(mean_data$interval, 
+     mean_data$mean, 
+     type="l", 
+     col="Red", 
+     lwd=2, 
+     xlab="Interval [minutes]", 
+     ylab="Average number of steps", 
+     main="Time-series for Avg number of steps per intervals")
+
+```
+
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r, echo=TRUE}
+mean_data[which(mean_data$mean == max(mean_data$mean)) ,1]
+
+```
+
+## Imputing missing values
+
+```{r, echo=TRUE}
+
+# Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+sum(is.na(data))
+
+# Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+# Find the position of NA
+
+pos <- which(is.na(data$steps))
+
+#Create Vector containing Mean Value. I am taking Mean values for imputing the mission Numbers.
+
+vector <- rep(mean(data$steps, na.rm=TRUE), times=length(pos))
+
+# Create a new dataset that is equal to the original dataset but with the missing data filled in.
+# Replace  NA Value by Median value
+data[pos, "steps"] <-vector
+
+
+```
+
+## Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day
+
+```{r, echo=TRUE}
+
+sum_steps <- aggregate(data$steps, by=list(data$date), FUN=sum, na.rm=TRUE)
+
+names(sum_steps) <- c("date", "steps")
+
+hist(sum_steps$steps, main="Histogram for Total Steps per Day", xlab="Total Steps", col="Blue")
+
+mean(sum_steps$steps)
+
+median(sum_steps$steps)
+```
+
+## What is the impact of imputing missing data on the estimates of the total daily number of steps?
+After imputting the missing data the mean and median values changed. Number of data increased and caused the increased value in Mean and Median Value.
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r, echo=TRUE}
+
+# Tell R that Date column is in specified Date format
+data$date <- as.POSIXct(data$date, format="%Y-%m-%d")
+weekday=tolower(weekdays(data$date))
+data_tmp <- cbind( data, weekday)
+
+#Create the Day Type Variable
+type=ifelse(data_tmp$weekday == "saturday" | data_tmp$weekday == "sunday", "weekend", "weekday")
+data_new <- cbind( data_tmp, type)
+
+mean_data <- aggregate(data_new$steps, by=list(data_new$type, data_new$weekday, data_new$interval), mean)
+
+# Name the attributes
+names(mean_data) <- c("daytype", "weekday", "interval", "mean")
+
+library(lattice)
+
+# 2.Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
+
+xyplot(mean~ mean_data$interval | mean_data$daytype, 
+     mean_data, 
+     type="l", 
+     col="Red", 
+     lwd=2, 
+     xlab="Interval [minutes]", 
+     ylab="Average number of steps", 
+     main="Time-series for Avg number of steps per intervals")
+```
